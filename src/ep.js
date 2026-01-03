@@ -1,10 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
-import {
-  GLTFLoader,
-  GLTFParser,
-} from "three/examples/jsm/loaders/GLTFLoader.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color("#FFEECC");
@@ -90,10 +87,28 @@ sunlight.shadow.camera.top = 10;
   scene.add(sunlight);
   scene.add(sphere);
 
-  //
+  // clock
+
+  const clock = new THREE.Clock();
 
   // render loop
   renderer.setAnimationLoop(() => {
+    planesData.forEach((planeData) => {
+      let plane = planeData.group;
+
+      plane.position.set(0, 0, 0);
+      plane.rotation.set(0, 0, 0);
+      plane.rotateOnAxis(new THREE.Vector3(0, 0, 1), planeData.rad);
+      plane.updateMatrixWorld();
+      const delta = clock.getDelta();
+
+      planeData.rot += delta * 0.25;
+      plane.rotateOnAxis(new THREE.Vector3(0, 1, 0), planeData.rot);
+      plane.rotateOnAxis(new THREE.Vector3(0, 0, 1), planeData.rad);
+      plane.translateY(planeData.yOff);
+      plane.rotateOnAxis(new THREE.Vector3(1, 0, 0), +Math.PI * 0.5);
+      scene.add(plane);
+    });
     controls.update();
     renderer.render(scene, camera);
   });
@@ -120,5 +135,7 @@ function makePlane(planeMesh, trailTexture, envmap, scene) {
   return {
     group,
     yOff: 10.5 + Math.random() * 1.0,
+    rad: Math.random() * Math.PI * 0.45 + 0.2,
+    rot: 0,
   };
 }
