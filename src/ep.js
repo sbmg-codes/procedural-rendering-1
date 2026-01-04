@@ -42,6 +42,17 @@ sunlight.shadow.camera.right = 10;
 sunlight.shadow.camera.bottom = -10;
 sunlight.shadow.camera.top = 10;
 
+// ring scene and camera
+
+const ringScene = new THREE.Scene();
+const ringsCamera = new THREE.PerspectiveCamera(
+  45,
+  innerWidth / innerHeight,
+  0.1,
+  1000
+);
+ringsCamera.position.set(0, 0, 50);
+
 (async function () {
   //env map
 
@@ -49,8 +60,24 @@ sunlight.shadow.camera.top = 10;
   let envmapTexture = await new RGBELoader()
     .setDataType(THREE.FloatType)
     .loadAsync("/envmap.hdr");
-
   let envMap = pmrem.fromEquirectangular(envmapTexture).texture;
+
+  const ring1 = new THREE.Mesh(
+    new THREE.RingGeometry(15, 13.5, 80, 1, 0),
+    new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color("#FFC88E")
+        .convertSRGBToLinear()
+        .multiplyScalar(200),
+      roughness: 0.25,
+      envMap: envMap,
+      envMapIntensity: 1.7,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.35,
+    })
+  );
+  ringScene.add(ring1);
+
   // textures
 
   const textures = {
@@ -65,13 +92,7 @@ sunlight.shadow.camera.top = 10;
   const gltfLoader = new GLTFLoader();
   const plane = (await gltfLoader.loadAsync("/pl.glb")).scene.children[0];
 
-  let planesData = [
-    makePlane(plane, textures.planeTrailMask, envMap, scene),
-    makePlane(plane, textures.planeTrailMask, envMap, scene),
-    makePlane(plane, textures.planeTrailMask, envMap, scene),
-    makePlane(plane, textures.planeTrailMask, envMap, scene),
-    makePlane(plane, textures.planeTrailMask, envMap, scene),
-  ];
+  let planesData = [makePlane(plane, textures.planeTrailMask, envMap, scene)];
 
   //sphere
 
@@ -121,6 +142,10 @@ sunlight.shadow.camera.top = 10;
     });
     controls.update();
     renderer.render(scene, camera);
+
+    renderer.autoClear = false;
+    renderer.render(ringScene, camera);
+    renderer.autoClear = true;
   });
 })();
 
@@ -139,7 +164,28 @@ function makePlane(planeMesh, trailTexture, envmap, scene) {
     }
   });
 
+  let trail = new THREE.Mesh(
+    new THREE.PlaneGeometry(1, 2),
+    new THREE.MeshPhysicalMaterial({
+      envMap: envmap,
+      envMapIntensity: 3,
+
+      roughness: 0.4,
+      metalness: 0,
+      transmission: 1,
+
+      transparent: true,
+      opacity: 1,
+      alphaMap: trailTexture,
+      side: THREE.DoubleSide,
+    })
+  );
+
+  trail.rotateX(Math.PI);
+  trail.translateY(1.1);
+
   let group = new THREE.Group();
+  group.add(trail);
   group.add(plane);
 
   return {
