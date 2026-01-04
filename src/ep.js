@@ -65,7 +65,13 @@ sunlight.shadow.camera.top = 10;
   const gltfLoader = new GLTFLoader();
   const plane = (await gltfLoader.loadAsync("/pl.glb")).scene.children[0];
 
-  let planesData = [makePlane(plane, textures.planeTrailMask, envMap, scene)];
+  let planesData = [
+    makePlane(plane, textures.planeTrailMask, envMap, scene),
+    makePlane(plane, textures.planeTrailMask, envMap, scene),
+    makePlane(plane, textures.planeTrailMask, envMap, scene),
+    makePlane(plane, textures.planeTrailMask, envMap, scene),
+    makePlane(plane, textures.planeTrailMask, envMap, scene),
+  ];
 
   //sphere
 
@@ -89,25 +95,29 @@ sunlight.shadow.camera.top = 10;
 
   // clock
 
-  const clock = new THREE.Clock();
+  planesData.forEach((p) => scene.add(p.group));
 
   // render loop
+
+  const clock = new THREE.Clock();
   renderer.setAnimationLoop(() => {
+    const delta = clock.getDelta();
     planesData.forEach((planeData) => {
       let plane = planeData.group;
 
       plane.position.set(0, 0, 0);
       plane.rotation.set(0, 0, 0);
-      plane.rotateOnAxis(new THREE.Vector3(0, 0, 1), planeData.rad);
       plane.updateMatrixWorld();
-      const delta = clock.getDelta();
+      plane.rotateOnAxis(new THREE.Vector3(0, 0, 1), planeData.rad);
+      // const delta = clock.getDelta();
 
       planeData.rot += delta * 0.25;
+      plane.rotateOnAxis(planeData.randomAxis, planeData.randomAxisRot);
       plane.rotateOnAxis(new THREE.Vector3(0, 1, 0), planeData.rot);
       plane.rotateOnAxis(new THREE.Vector3(0, 0, 1), planeData.rad);
       plane.translateY(planeData.yOff);
       plane.rotateOnAxis(new THREE.Vector3(1, 0, 0), +Math.PI * 0.5);
-      scene.add(plane);
+      // scene.add(plane);
     });
     controls.update();
     renderer.render(scene, camera);
@@ -136,6 +146,12 @@ function makePlane(planeMesh, trailTexture, envmap, scene) {
     group,
     yOff: 10.5 + Math.random() * 1.0,
     rad: Math.random() * Math.PI * 0.45 + 0.2,
-    rot: 0,
+    rot: Math.random() * Math.PI * 2.0,
+    randomAxisRot: Math.random() * Math.PI * 2.0,
+    randomAxis: new THREE.Vector3(nr(), nr(), nr()).normalize(),
   };
+}
+
+function nr() {
+  return Math.random() * 2 - 1;
 }
